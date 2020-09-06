@@ -2,26 +2,24 @@ card(Card) :-
     % FIXME: validate cards?
     true.
 
-change_rep([], []).
-change_rep([card(Rank, Suit) | Cards], Pairs) :-
-    true.
+
 
 pair(card(Rank, Suit), R-Suit) :-
-    Mapping = [ace-1, jack-11, queen-12, king-13],
-    ( Rank
-    
-    )
-    % ( Rank = ace ->
-    %     R = 1
-    % ; Rank = jack ->
-    %     R = 11
-    % ; Rank = queen ->
-    %     R = 12
-    % ; Rank = king ->
-    %     R = 13
-    % ;
-    %     R = Rank
-    % ).
+    Mappings = [ace-1, jack-11, queen-12, king-13],
+    % Suits = [clubs, diamonds, hearts, spades],
+    % member(Suit, Suits),
+    ( member(Rank-Value, Mappings) ->
+        R = Value
+    ; integer(Rank), between(2, 10, Rank) ->
+        R = Rank
+    ).
+
+pair2(card(Rank, Suit), R-Suit) :-
+    Mappings = [ace-1, jack-11, queen-12, king-13],
+    member(Rank-R, Mappings).
+pair2(card(Rank, Suit), Rank-Suit) :-
+    integer(Rank), between(2, 10, Rank).
+
 
 count_rank([], []).
 count_rank([card(Rank, Suit) | Cards], Counts) :-
@@ -41,6 +39,18 @@ select_hand(Cards, Hand, Cribcards) :-
 
 /*
 tests, and expected output:
+
+[card(7,clubs), card(queen,hearts), card(2,clubs), card(jack,clubs)],
+card(9,hearts),
+0
+
+[card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],
+card(king,spades),
+2
+
+[card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],
+card(2,diamonds)
+5
 
 ?-hand_value([
     card(7,clubs),

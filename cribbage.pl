@@ -18,10 +18,6 @@ pair2(card(Rank, Suit), R-Suit) :-
 pair2(card(Rank, Suit), Rank-Suit) :-
     integer(Rank), between(2, 10, Rank).
 
-score_pairs([], Acc, Acc).
-score_pairs([Rank-Count | Tail], Acc, Score) :-
-    Count >= 2.
-
 fact(N, Result) :-
     fact(N, 1, Result).
 fact(N, A, Result) :-
@@ -41,6 +37,49 @@ binom(N, K, B) :-
     fact(D, F3),
     B is F1 / (F2 * F3).
 
+% TODO: filter >=2 then binom() then sum...
+
+score_pairs([], Acc, Acc).
+score_pairs([_-Count | Tail], Acc, Score) :-
+    ( Count >= 2 ->
+        binom(Count, 2, NPairs),
+        Acc1 is Acc + (NPairs * 2),
+        score_pairs(Tail, Acc1, Score)
+    ;
+        score_pairs(Tail, Acc, Score)
+    ).
+score_pairs(Counts, Score) :-
+    score_pairs(Counts, 0, Score).
+
+
+% TODO: consider this syntax: [A, B | C]
+% TODO: 8 space tabs???
+
+
+
+score_runs(Counts, Score) :-
+    N >= 3,
+    length(List, N).
+
+
+
+score_runs([], _, N, Acc, Acc).
+score_runs([Rank1-Count1 | Tail], Rank0-Count0, N, Acc, Score) :-
+    ( Rank1 =:= Rank0 + 1 ->
+        %length(Run, N),
+        N1 is N + 1,
+        ( N1 >= 3 ->
+            Acc1 is Acc + 1,
+            score_runs(Tail, Rank1-Count1, N1, Acc1, Score)
+        ;
+            score_runs(Tail, Rank1-Count1, N1, Acc, Score)
+        ),
+        score_runs(Tail, Rank1-Count1, 0, Acc, Score)
+    ).
+
+score_runs([Rank-Count | Counts], Score) :-
+    score_runs(Counts, Rank-Count, 0, 0, Score).
+
 
 % TODO: work from the back? to make use of cons
 % count_rank(Tail, [Rank1-Count1, Rank0-Count0 | Tail], Counts),
@@ -57,7 +96,35 @@ count_rank(Cards, Counts) :-
     maplist(pair, Cards, Pairs),
     msort(Pairs, SortedPairs),
     SortedPairs = [Rank-_ | Tail],
-    count_rank(Tail, Rank-1, [], Counts).
+    count_rank(Tail, Rank-1, [], Counts0).
+    reverse(Counts0, Counts).
+
+% listof(_, []).
+% listof(X, [X | Xs]) :-
+%     listof(X, Xs).
+
+all_same_suit([]).
+all_same_suit([card(_, _)]).
+all_same_suit([card(_, Suit), card(Rank1, Suit) | Cards]) :-
+    all_same_suit([card(Rank1, Suit) | Cards]).
+
+
+score_flush([card(Rank, Suit) | Cards], Startcard, Score) :-
+    ( all_same_suit([card(Rank, Suit) | Cards]) ->
+        ( Startcard = card(_, Suit) ->
+            Score = 5
+        ;
+            Score = 4
+        )
+    ; Score = 0
+    ).
+
+score_one_for_his_nob(Hand, card(_, Suit), Score) :-
+    ( member(card(jack, Suit), Hand) ->
+        Score = 1
+    ;
+        Score = 0
+    ).
 
 det(A, B) :-
     A = 1, B = 2;
@@ -74,8 +141,9 @@ det2(A, B) :-
 % hand_value(+Hand, +Startcard, ?Value)
 % FIXME: documentation is assessed...
 hand_value(Hand, Startcard, Value) :-
-    Hand = [card(X, Y), card(W, Z)],
-    Startcard = card().
+    score_one_for_his_nob(Hand, Startcard, Score).
+    % score_flushes(Hand, Startcard, S1),
+    % Value is S0 + S1.
 
 select_hand(Cards, Hand, Cribcards) :-
     true.
@@ -96,6 +164,8 @@ card(king,spades),
 [card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],
 card(2,diamonds)
 5
+
+[card(6,clubs), card(7,clubs), card(8,clubs), card(9,clubs)], card(8,spades)
 
 ?-hand_value([
     card(7,clubs),

@@ -52,33 +52,103 @@ score_pairs(Counts, Score) :-
     score_pairs(Counts, 0, Score).
 
 
+sublist_of(Sub, List) :-
+    true.
+
 % TODO: consider this syntax: [A, B | C]
 % TODO: 8 space tabs???
-
-
-
-score_runs(Counts, Score) :-
+run(Counts, Run):-
+    length(Run, N),
     N >= 3,
-    length(List, N).
+    sublist_of(Run, Counts).
+
+% TODO: obvious stack overflow?
+combo([], []).
+combo([H|T], [H|T2]) :-
+    combo(T, T2).
+combo([_|T], T2) :-
+    combo(T, T2).
+
+sum_ranks([], Acc, Acc).
+sum_ranks([R-C | RCs], Acc, Sum) :-
+    Acc1 is Acc + min(R, 10),
+    sum_ranks(RCs, Acc1, Sum).
+
+sum_ranks(Cards, Sum) :-
+    sum_ranks(Cards, 0, Sum).
+
+product_counts([], Acc, Acc).
+product_counts([R-C | RCs], Acc, Product) :-
+    Acc1 is Acc * C,
+    product_counts(RCs, Acc1, Product).
+
+product_counts(Cards, Product) :-
+    product_counts(Cards, 1, Product).
+
+
+% TODO: J, Q, K are counted as 10...
+fifteen(Cards, Combo, Ways) :-
+    combo(Cards, Combo),
+    sum_ranks(Combo, 15),
+    product_counts(Combo, Ways).
+
+score_fifteens(Cards, Score) :-
+    ( setof(Combo-Ways, fifteen(Cards, Combo, Ways), Pairs) ->
+        pairs_values(Pairs, Values),
+        sumlist(Values, N),
+        Score is N * 2
+    ;
+        Score is 0
+    ).
+
+% score_fifteens2([], [], Sum, Acc, Acc).
+% score_fifteens2([H1 | T1], [H | T], Acc, Sum) :-
+%     member(H, [H1 | T1])
 
 
 
-score_runs([], _, N, Acc, Acc).
-score_runs([Rank1-Count1 | Tail], Rank0-Count0, N, Acc, Score) :-
+fifteen2(Ranks, Combo) :-
+    combo(Ranks, Combo),
+    sum_list(Combo, 15).
+    
+
+min(X, Y, X) :-
+    X =< Y.
+min(X, Y, Y) :-
+    X > Y.
+
+% TODO: findall/3
+score_fifteens2(Cards, Score) :-
+    maplist(pair, Cards, Pairs),
+    pairs_keys(Pairs, Ranks),
+    maplist(min(10), Ranks, Ranks1),
+    findall(Combo, fifteen2(Ranks1, Combo), Fifteens),
+    length(Fifteens, Ways),
+    Score is Ways * 2.
+
+    
+
+
+
+
+score_runs([], _, N, M, Acc, Score) :-
+    ( N >=3 -> 
+        Score is Acc + N * M
+    ; Score = Acc
+    ).
+score_runs([Rank1-Count1 | Tail], Rank0-Count0, N, M, Acc, Score) :-
     ( Rank1 =:= Rank0 + 1 ->
-        %length(Run, N),
         N1 is N + 1,
-        ( N1 >= 3 ->
-            Acc1 is Acc + 1,
-            score_runs(Tail, Rank1-Count1, N1, Acc1, Score)
-        ;
-            score_runs(Tail, Rank1-Count1, N1, Acc, Score)
-        ),
-        score_runs(Tail, Rank1-Count1, 0, Acc, Score)
+        M1 is M * Count1,
+        score_runs(Tail, Rank1-Count1, N1, M1, Acc, Score)
+    ; N >= 3 ->
+        Acc1 is Acc + N * M,
+        score_runs(Tail, Rank1-Count1, 1, Count1, Acc1, Score)
+    ; score_runs(Tail, Rank1-Count1, 1, Count1, Acc, Score)
     ).
 
 score_runs([Rank-Count | Counts], Score) :-
-    score_runs(Counts, Rank-Count, 0, 0, Score).
+    score_runs(Counts, Rank-Count, 1, Count, 0, Score).
 
 
 % TODO: work from the back? to make use of cons
@@ -96,7 +166,7 @@ count_rank(Cards, Counts) :-
     maplist(pair, Cards, Pairs),
     msort(Pairs, SortedPairs),
     SortedPairs = [Rank-_ | Tail],
-    count_rank(Tail, Rank-1, [], Counts0).
+    count_rank(Tail, Rank-1, [], Counts0),
     reverse(Counts0, Counts).
 
 % listof(_, []).
@@ -114,6 +184,7 @@ score_flush([card(Rank, Suit) | Cards], Startcard, Score) :-
         ( Startcard = card(_, Suit) ->
             Score = 5
         ;
+            % does not depend on size of hand???
             Score = 4
         )
     ; Score = 0
@@ -122,28 +193,20 @@ score_flush([card(Rank, Suit) | Cards], Startcard, Score) :-
 score_one_for_his_nob(Hand, card(_, Suit), Score) :-
     ( member(card(jack, Suit), Hand) ->
         Score = 1
-    ;
-        Score = 0
+    ; Score = 0
     ).
-
-det(A, B) :-
-    A = 1, B = 2;
-    A = 2, B = 4.
-
-det2(A, B) :-
-    A = 1,
-    B = 2.
-det2(A, B) :-
-    A = 2,
-    B = 4.
-    
 
 % hand_value(+Hand, +Startcard, ?Value)
 % FIXME: documentation is assessed...
 hand_value(Hand, Startcard, Value) :-
-    score_one_for_his_nob(Hand, Startcard, Score).
-    % score_flushes(Hand, Startcard, S1),
-    % Value is S0 + S1.
+    score_one_for_his_nob(Hand, Startcard, S0),
+    score_flush(Hand, Startcard, S1),
+    Cards = [Startcard | Hand],
+    score_fifteens2(Cards, S2),
+    count_rank(Cards, Counts),
+    score_runs(Counts, S3),
+    score_pairs(Counts, S4),
+    Value is S0 + S1 + S2 + S3 + S4.
 
 select_hand(Cards, Hand, Cribcards) :-
     true.
@@ -157,15 +220,15 @@ tests, and expected output:
 card(9,hearts),
 0
 
-[card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],
-card(king,spades),
-2
+[card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],card(king,spades),2
 
 [card(ace,spades), card(3,hearts), card(king,hearts), card(7,hearts)],
 card(2,diamonds)
 5
 
 [card(6,clubs), card(7,clubs), card(8,clubs), card(9,clubs)], card(8,spades)
+C = [9-1, 8-1, 7-1, 6-1]
+C = [6-1, 7-1, 8-1, 9-1]
 
 ?-hand_value([
     card(7,clubs),

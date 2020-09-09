@@ -1,4 +1,9 @@
-card(Card) :-
+% Author: Jonathan Jauhari 1038331 <jjauhari@student.unimelb.edu.au>
+% Purpose: 
+%
+% This Prolog program ...  
+
+card(_) :-
     % FIXME: validate cards?
     true.
 
@@ -30,7 +35,7 @@ fact(N, A, Result) :-
         fact(N1, A1, Result)
     ).
 
-binom(N, K, B) :-
+choose(K, N, B) :-
     fact(N, F1),
     fact(K, F2),
     D is N - K,
@@ -42,7 +47,7 @@ binom(N, K, B) :-
 score_pairs([], Acc, Acc).
 score_pairs([_-Count | Tail], Acc, Score) :-
     ( Count >= 2 ->
-        binom(Count, 2, NPairs),
+        choose(2, Count, NPairs),
         Acc1 is Acc + (NPairs * 2),
         score_pairs(Tail, Acc1, Score)
     ;
@@ -52,15 +57,24 @@ score_pairs(Counts, Score) :-
     score_pairs(Counts, 0, Score).
 
 
-sublist_of(Sub, List) :-
-    true.
+score_pairs2(RankCounts, Score) :-
+    pairs_values(RankCounts, Counts),
+    include(call(=<, 2), Counts, Counts1),
+    maplist(choose(2), Counts1, Ways),
+    sum_list(Ways, NPairs),
+    Score is NPairs * 2.
+    
+
 
 % TODO: consider this syntax: [A, B | C]
 % TODO: 8 space tabs???
-run(Counts, Run):-
-    length(Run, N),
-    N >= 3,
-    sublist_of(Run, Counts).
+
+% sublist_of(Sub, List) :-
+%     true.
+% run(Counts, Run):-
+%     length(Run, N),
+%     N >= 3,
+%     sublist_of(Run, Counts).
 
 % TODO: obvious stack overflow?
 combo([], []).
@@ -70,7 +84,7 @@ combo([_|T], T2) :-
     combo(T, T2).
 
 sum_ranks([], Acc, Acc).
-sum_ranks([R-C | RCs], Acc, Sum) :-
+sum_ranks([R-_ | RCs], Acc, Sum) :-
     Acc1 is Acc + min(R, 10),
     sum_ranks(RCs, Acc1, Sum).
 
@@ -78,7 +92,7 @@ sum_ranks(Cards, Sum) :-
     sum_ranks(Cards, 0, Sum).
 
 product_counts([], Acc, Acc).
-product_counts([R-C | RCs], Acc, Product) :-
+product_counts([_-C | RCs], Acc, Product) :-
     Acc1 is Acc * C,
     product_counts(RCs, Acc1, Product).
 
@@ -101,17 +115,11 @@ score_fifteens(Cards, Score) :-
         Score is 0
     ).
 
-% score_fifteens2([], [], Sum, Acc, Acc).
-% score_fifteens2([H1 | T1], [H | T], Acc, Sum) :-
-%     member(H, [H1 | T1])
-
-
 
 fifteen2(Ranks, Combo) :-
     combo(Ranks, Combo),
     sum_list(Combo, 15).
     
-
 min(X, Y, X) :-
     X =< Y.
 min(X, Y, Y) :-
@@ -126,17 +134,13 @@ score_fifteens2(Cards, Score) :-
     length(Fifteens, Ways),
     Score is Ways * 2.
 
-    
-
-
-
 
 score_runs([], _, N, M, Acc, Score) :-
     ( N >=3 -> 
         Score is Acc + N * M
     ; Score = Acc
     ).
-score_runs([Rank1-Count1 | Tail], Rank0-Count0, N, M, Acc, Score) :-
+score_runs([Rank1-Count1 | Tail], Rank0-_, N, M, Acc, Score) :-
     ( Rank1 =:= Rank0 + 1 ->
         N1 is N + 1,
         M1 is M * Count1,
@@ -151,28 +155,55 @@ score_runs([Rank-Count | Counts], Score) :-
     score_runs(Counts, Rank-Count, 1, Count, 0, Score).
 
 
+score_runs2([], _-_, Acc, Acc).
+score_runs2([_], Len-Ways, Acc, Score) :-
+    Len >= 3,
+    Score is Acc + Len * Ways.
+score_runs2([_], Len-_, Acc, Score) :-
+    Len < 3,
+    Score is Acc.
+score_runs2([Rank0-_, Rank1-Count1 | RCs], Len-Ways, Acc, Score) :-
+    Rank1 =:= Rank0 + 1,
+    Len1 is Len + 1,
+    Ways1 is Ways * Count1,
+    score_runs2([Rank1-Count1 | RCs], Len1-Ways1, Acc, Score).
+score_runs2([Rank0-_, Rank1-Count1 | RCs], Len-Ways, Acc, Score) :-
+    Rank1 =\= Rank0 + 1,
+    Len >= 3,
+    Acc1 is Acc + Len * Ways,
+    score_runs2([Rank1-Count1 | RCs], 1-Count1, Acc1, Score).
+score_runs2([Rank0-_, Rank1-Count1 | RCs], Len-_, Acc, Score) :-
+    Rank1 =\= Rank0 + 1,
+    Len < 3,
+    score_runs2([Rank1-Count1 | RCs], 1-Count1, Acc, Score).
+
+score_runs2(Cards, Score) :-
+    Cards = [_-Count | _],
+    score_runs2(Cards, 1-Count, 0, Score).
+
 % TODO: work from the back? to make use of cons
 % count_rank(Tail, [Rank1-Count1, Rank0-Count0 | Tail], Counts),
 % true.
-count_rank([], Rank0-Count0, Acc, [Rank0-Count0 | Acc]).
-count_rank([Rank1-_ | Tail], Rank1-Count0, Acc, Counts) :-
+rank_count([Rank0-Count0], Acc, [Rank0-Count0 | Acc]).
+rank_count([Rank1-Count0, Rank1-_ | Tail], Acc, Counts) :-
     Count1 is Count0 + 1,
-    count_rank(Tail, Rank1-Count1, Acc, Counts).
-count_rank([Rank1-_ | Tail], Rank0-Count0, Acc, Counts) :-
+    rank_count([Rank1-Count1 | Tail], Acc, Counts).
+rank_count([Rank0-Count0, Rank1-_ | Tail], Acc, Counts) :-
     Rank1 \= Rank0,
-    count_rank(Tail, Rank1-1, [Rank0-Count0 | Acc], Counts).
+    rank_count([Rank1-1 | Tail], [Rank0-Count0 | Acc], Counts).
 
-count_rank(Cards, Counts) :-
+rank_count(Cards, Counts) :-
     maplist(pair, Cards, Pairs),
     msort(Pairs, SortedPairs),
     SortedPairs = [Rank-_ | Tail],
-    count_rank(Tail, Rank-1, [], Counts0),
+    rank_count([Rank-1 | Tail], [], Counts0),
     reverse(Counts0, Counts).
 
 % listof(_, []).
 % listof(X, [X | Xs]) :-
 %     listof(X, Xs).
 
+% TODO: empty hand necessary?
 all_same_suit([]).
 all_same_suit([card(_, _)]).
 all_same_suit([card(_, Suit), card(Rank1, Suit) | Cards]) :-
@@ -190,26 +221,44 @@ score_flush([card(Rank, Suit) | Cards], Startcard, Score) :-
     ; Score = 0
     ).
 
+score_flush2(Cards, card(_, Suit), 5) :-
+    all_same_suit(Cards),
+    Cards = [card(_, Suit) | _].
+score_flush2(Cards, card(_, Suit2), 4) :-
+    all_same_suit(Cards),
+    Cards = [card(_, Suit1) | _],
+    Suit1 \= Suit2.
+score_flush2(Cards, _, 0) :-
+    \+ all_same_suit(Cards).
+
 score_one_for_his_nob(Hand, card(_, Suit), Score) :-
     ( member(card(jack, Suit), Hand) ->
         Score = 1
     ; Score = 0
     ).
 
+score_one_for_his_nob2(Hand, card(_, Suit), 1) :-
+    member(card(jack, Suit), Hand).
+score_one_for_his_nob2(Hand, card(_, Suit), 0) :-
+    \+ member(card(jack, Suit), Hand).
+
+
+
+hand_value([], _, 0).
 % hand_value(+Hand, +Startcard, ?Value)
 % FIXME: documentation is assessed...
 hand_value(Hand, Startcard, Value) :-
-    score_one_for_his_nob(Hand, Startcard, S0),
-    score_flush(Hand, Startcard, S1),
+    score_one_for_his_nob2(Hand, Startcard, S0),
+    score_flush2(Hand, Startcard, S1),
     Cards = [Startcard | Hand],
     score_fifteens2(Cards, S2),
-    count_rank(Cards, Counts),
-    score_runs(Counts, S3),
-    score_pairs(Counts, S4),
+    rank_count(Cards, Counts),
+    score_runs2(Counts, S3),
+    score_pairs2(Counts, S4),
     Value is S0 + S1 + S2 + S3 + S4.
 
-select_hand(Cards, Hand, Cribcards) :-
-    true.
+% select_hand(Cards, Hand, Cribcards) :-
+%     true.
 
 
 

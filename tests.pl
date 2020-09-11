@@ -30,7 +30,22 @@ test1 :-
     % 24    8,2,5 (2*1*6) * 2 pts
     % 12    5,7,1,2 (6*1*1*1) * 2 pts
     % 2     6,6,1,2 (1*1*1) * 2pts
-    hand_value([card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(6, hearts), card(6, hearts), card(jack, hearts), card(7, hearts), card(8, hearts), card(8, hearts), card(9, hearts), card(queen, hearts), card(ace, hearts), card(2, hearts)], card(king, hearts), 309).
+    hand_value([card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(5, hearts), card(6, hearts), card(6, hearts), card(jack, hearts), card(7, hearts), card(8, hearts), card(8, hearts), card(9, hearts), card(queen, hearts), card(ace, hearts), card(2, hearts)], card(king, hearts), 309),
+
+    select_hand([card(5,clubs), card(5,diamonds),card(7,clubs),card(8,clubs),card(9, hearts), card(jack, clubs)],[card(5, clubs), card(7, clubs), card(8, clubs), card(jack, clubs)], [card(5, diamonds), card(9, hearts)]),
+
+    select_hand([card(5,clubs), card(5,diamonds),card(7,clubs),card(5,clubs), card(9, hearts), card(jack, clubs)],[card(5, clubs), card(5, diamonds), card(5, clubs), card(jack, clubs)], [card(7, clubs), card(9, hearts)] ),
+
+    % select_hand([card(5,clubs), card(5,diamonds),card(5,clubs),card(jack,clubs), card(jack, hearts), card(jack, clubs)], [card(5, clubs), card(5, clubs), card(jack, clubs), card(jack, clubs)], [card(5, diamonds), card(jack, hearts)]),
+
+    select_hand([card(4,clubs), card(ace,diamonds),card(7,clubs),card(3,clubs), card(3, hearts), card(9, clubs)],[card(4, clubs), card(7, clubs), card(3, clubs), card(9, clubs)], [card(ace, diamonds), card(3, hearts)]),
+
+    select_hand([card(4,clubs), card(3,diamonds),card(7,clubs),card(3,clubs), card(3, hearts), card(9, clubs)],[card(3, diamonds), card(3, clubs), card(3, hearts), card(9, clubs)], [card(4, clubs), card(7, clubs)]),
+
+    select_hand([card(3,clubs), card(3,diamonds),card(3,clubs),card(5,clubs), card(5, hearts), card(5, clubs)],[card(3, clubs), card(3, clubs), card(5, clubs), card(5, clubs)], [card(3, diamonds), card(5, hearts)]),
+
+    select_hand([card(3,clubs), card(3,diamonds),card(3,hearts),card(5,clubs), card(5, hearts), card(5, diamonds)],[card(3, clubs), card(5, clubs), card(5, hearts), card(5, diamonds)], [card(3, diamonds), card(3, hearts)]).
+
 
 % run the test1 goal when this file is loaded.
 :- test1.

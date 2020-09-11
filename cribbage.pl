@@ -2,9 +2,40 @@
 % Purpose:  Scoring cribbage hands and deciding which card(s) to keep in
 %           the hand to maximise score.
 %
-% This Prolog program ...  
-% what is cribbage
-
+% Cribbage is a card game that involves playing and grouping cards.
+% The game begins with the dealer dealing each player 5 or 6 cards (depending
+% on the number of players). Players choose 4 cards to keep in their hand and
+% put the rest in the crib. The discarded cards form the dealer's 4-card hand.
+% The dealer then cuts the deck to select an extra card, called the start card.
+%
+% Then, the players take turns to play single cards. Players play their
+% cards to form a face-up pile in front of them. After the play comes the show,
+% where players establish the value of a 5 card hand (their 4-card hand and
+% the start card).
+%
+% The scoring rules are as follows:
+% - (15s) 2 points for each distinct combination of cards whose ranks sum
+%           to 15. For this purpose, an ace counts as 1 and a jack, queen, or
+%           king counts as 10.
+% - (Pairs) 2 points for each pair of cards with the same rank.
+% - (Runs) 1 point for each card in a run of 3 or more consecutive cards
+%           (suit does not matter). 6 consecutive cards makes a 6-card run,
+%           not 2 3-card runs. Runs cannot wrap around.
+% - (Flushes) 4 points if all the cards in the hand are of the same suit, and
+%           1 further point if the start card is also of that suit.
+% - (One for his nob) 1 point if the hand contains a jack of the same suit as
+%           the start card
+%
+% Following the show of each player's hand, the dealer claims points by
+% counting the crib as a second hand. Then the next player becomes the dealer
+% for the next hand. The first player to reach 121 points wins.
+% 
+% The main predicates in this Prolog program are:
+% - hand_value(Hand, Startcard, Value):
+%           Scores a cribbage hand (during the show).
+% - select_hand(Cards, Hand, Cribcards):
+%           Selects the cards to keep in hand (and to discard to the crib),
+%           to maximise expected hand value the startcard is drawn.
 
 
 pair1(card(Rank, Suit), R-Suit) :-

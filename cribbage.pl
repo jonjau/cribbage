@@ -2,16 +2,15 @@
 % Purpose:  Scoring cribbage hands and deciding which card(s) to keep in
 %           the hand to maximise score.
 %
-% Cribbage is a card game that involves playing and grouping cards.
-% The game begins with the dealer dealing each player 5 or 6 cards (depending
-% on the number of players). Players choose 4 cards to keep in their hand and
-% put the rest in the crib. The discarded cards form the dealer's 4-card hand.
-% The dealer then cuts the deck to select an extra card, called the start card.
+% Cribbage is a card game that involves playing and grouping cards. The game
+% begins with the dealer dealing each player 5 or 6 cards (depending on the
+% number of players). Players choose 4 cards to keep in their hand and put the
+% rest in the crib. The discarded cards form the dealer's 4-card hand. The
+% dealer then cuts the deck to select an extra card, called the start card.
 %
-% Then, the players take turns to play single cards. Players play their
-% cards to form a face-up pile in front of them. After the play comes the show,
-% where players establish the value of a 5 card hand (their 4-card hand and
-% the start card).
+% Then, the players take turns to play single cards (putting them face-up).
+% After the play comes the show, where players establish the value of a
+% 5-card hand (their 4-card hand and the start card).
 %
 % The scoring rules are as follows:
 % - (15s) 2 points for each distinct combination of cards whose ranks sum
@@ -31,97 +30,75 @@
 % for the next hand. The first player to reach 121 points wins.
 % 
 % The main predicates in this Prolog program are:
-% - hand_value(Hand, Startcard, Value):
+% - hand_value(+Hand, +Startcard, ?Value):
 %           Scores a cribbage hand (during the show).
-% - select_hand(Cards, Hand, Cribcards):
-%           Selects the cards to keep in hand (and to discard to the crib),
+% - select_hand(+Cards, +Hand, ?Cribcards):
+%           Selects cards to keep in hand (and to discard to the crib),
 %           to maximise expected hand value the startcard is drawn.
+%
+% =============================================================================
 
-
-pair1(card(Rank, Suit), R-Suit) :-
-    Mappings = [ace-1, jack-11, queen-12, king-13],
-    % Suits = [clubs, diamonds, hearts, spades],
-    % member(Suit, Suits),
-    ( member(Rank-Value, Mappings) ->
-        R = Value
-    ; integer(Rank), between(2, 10, Rank) ->
-        R = Rank
-    ).
-
+%% valid_card(?Card)
+%
+% Card is a card(Rank, Suit) term, representing a French-suited
+% playing card, i.e. Suit is one of spades, hearts, clubs or diamonds.
 valid_card(card(Rank, Suit)) :-
-    Ranks = [ace, 2, 3, 4, 5, 6, 7, 8, 9, 10, jack, queen, king],
-    Suits = [spades, hearts, clubs, diamonds],
-    member(Rank, Ranks),
-    member(Suit, Suits).
+        Ranks = [ace, 2, 3, 4, 5, 6, 7, 8, 9, 10, jack, queen, king],
+        Suits = [spades, hearts, clubs, diamonds],
+        member(Rank, Ranks),
+        member(Suit, Suits).
 
-pair(card(Rank, Suit), RankValue-Suit) :-
-    Mappings = [ace-1, jack-11, queen-12, king-13],
-    member(Rank-RankValue, Mappings).
-pair(card(Rank, Suit), Rank-Suit) :-
-    integer(Rank), between(2, 10, Rank).
+%% rank_suit_pair(?Card, ?RankSuitPair)
+%
+% Card is a valid card term and RankSuitPair is a pair of the numerical
+% value of the rank of the card and its suit. An ace is counted as 1.
+% e.g. card(king, spades) corresponds to 13-spades.
+rank_suit_pair(card(Rank, Suit), RankValue-Suit) :-
+        valid_card(card(Rank, Suit)),
+        Mappings = [ace-1, jack-11, queen-12, king-13],
+        member(Rank-RankValue, Mappings).
+rank_suit_pair(card(Rank, Suit), Rank-Suit) :-
+        valid_card(card(Rank, Suit)),
+        integer(Rank), between(2, 10, Rank).
 
-fact(N, Result) :-
-    fact(N, 1, Result).
-fact(N, Acc, Result) :-
-    ( N =:= 0 ->
-        Acc = Result
-    ;
-        N > 0,
-        N1 is N - 1,
-        Acc1 is Acc * N,
-        fact(N1, Acc1, Result)
-    ).
+%% factorial(+N, -Result)
+%
+% Result is the computed factorial of N. N >= 0.
+factorial(N, Result) :-
+        factorial(N, 1, Result).
+factorial(N, Acc, Result) :-
+        ( N =:= 0 ->
+                Acc = Result
+        ;
+                N > 0,
+                N1 is N - 1,
+                Acc1 is Acc * N,
+                factorial(N1, Acc1, Result)
+        ).
 
-choose1(_, 0, 1).
-choose1(N, K, B) :-
-    ( 0 =< K, K =< N ->
-        N1 is N - 1,
-        K1 is K - 1,
-        choose1(N1, K, B1),
-        choose1(N1, K1, B2),
-        B is B1 + B2
-    ).
-
+%% choose(+K, +N, -B)
+%
+% B is the computed binomial coefficient "N choose K". N >= K >= 0.
 choose(K, N, B) :-
-    fact(N, F1),
-    fact(K, F2),
-    D is N - K,
-    fact(D, F3),
-    B is F1 / (F2 * F3).
+        N >= K,
+        factorial(N, F1),
+        factorial(K, F2),
+        D is N - K,
+        factorial(D, F3),
+        B is F1 / (F2 * F3).
 
-% TODO: filter >=2 then binom() then sum...
-
-score_pairs([], Acc, Acc).
-score_pairs([_-Count | Tail], Acc, Score) :-
-    ( Count >= 2 ->
-        choose(2, Count, NPairs),
-        Acc1 is Acc + (NPairs * 2),
-        score_pairs(Tail, Acc1, Score)
-    ;
-        score_pairs(Tail, Acc, Score)
-    ).
-score_pairs(Counts, Score) :-
-    score_pairs(Counts, 0, Score).
-
-
-score_pairs2(RankCounts, Score) :-
-    pairs_values(RankCounts, Counts),
-    include(call(=<, 2), Counts, Counts1),
-    maplist(choose(2), Counts1, Ways),
-    sum_list(Ways, NPairs),
-    Score is NPairs * 2.
+%% score_pairs(+RankCounts, ?Score)
+%
+% Score is the number of points from pairs of cards of the same rank,
+% each pair is worth 2 points, in a collection of cards in the form of a list
+% of Rank-Count pairs, where Count is the number of occurences of Rank.
+score_pairs(RankCounts, Score) :-
+        pairs_values(RankCounts, Counts1),
+        include(call(=<, 2), Counts1, Counts2),
+        maplist(choose(2), Counts2, AllWays),
+        sum_list(AllWays, NPairs),
+        Score is NPairs * 2.
     
-
-
-% TODO: consider this syntax: [A, B | C]
-% TODO: 8 space tabs???
-
-% sublist_of(Sub, List) :-
-%     true.
-% run(Counts, Run):-
-%     length(Run, N),
-%     N >= 3,
-%     sublist_of(Run, Counts).
 
 % TODO: obvious stack overflow?
 combo([], []).
@@ -131,56 +108,28 @@ combo([_|T], T2) :-
     combo(T, T2).
 
 
-sum_ranks([], Acc, Acc).
-sum_ranks([R-_ | RCs], Acc, Sum) :-
-    Acc1 is Acc + min(R, 10),
-    sum_ranks(RCs, Acc1, Sum).
+fifteen(Ranks, Combo) :-
+        combo(Ranks, Combo),
+        sum_list(Combo, 15).
 
-sum_ranks(Cards, Sum) :-
-    sum_ranks(Cards, 0, Sum).
-
-product_counts([], Acc, Acc).
-product_counts([_-C | RCs], Acc, Product) :-
-    Acc1 is Acc * C,
-    product_counts(RCs, Acc1, Product).
-
-product_counts(Cards, Product) :-
-    product_counts(Cards, 1, Product).
-
-
-% TODO: J, Q, K are counted as 10...
-fifteen(Cards, Combo, Ways) :-
-    combo(Cards, Combo),
-    sum_ranks(Combo, 15),
-    product_counts(Combo, Ways).
-
-score_fifteens(Cards, Score) :-
-    ( setof(Combo-Ways, fifteen(Cards, Combo, Ways), Pairs) ->
-        pairs_values(Pairs, Values),
-        sumlist(Values, N),
-        Score is N * 2
-    ;
-        Score is 0
-    ).
-
-
-fifteen2(Ranks, Combo) :-
-    combo(Ranks, Combo),
-    sum_list(Combo, 15).
-    
+%% min(+A, +B, ?Min)
+%
+% Min is the smaller term between A and B.
 min(A, B, A) :-
-    A =< B.
+        A @=< B.
 min(A, B, B) :-
-    A > B.
+        A @> B.
 
-% TODO: findall/3
-score_fifteens2(Cards, Score) :-
-    maplist(pair, Cards, Pairs),
-    pairs_keys(Pairs, Ranks),
-    maplist(min(10), Ranks, Ranks1),
-    findall(Combo, fifteen2(Ranks1, Combo), Fifteens),
-    length(Fifteens, Ways),
-    Score is Ways * 2.
+%% score_fifteens (+Cards, ?Score)
+%
+% 
+score_fifteens(Cards, Score) :-
+        maplist(rank_suit_pair, Cards, RankSuits),
+        pairs_keys(RankSuits, Ranks),
+        maplist(min(10), Ranks, Ranks1),
+        findall(Combo, fifteen(Ranks1, Combo), Fifteens),
+        length(Fifteens, NFifteens),
+        Score is NFifteens * 2.
 
 
 score_runs([], _, N, M, Acc, Score) :-
@@ -228,89 +177,76 @@ score_runs2(Cards, Score) :-
     Cards = [_-Count | _],
     score_runs2(Cards, 1-Count, 0, Score).
 
-% TODO: work from the back? to make use of cons
-% count_rank(Tail, [Rank1-Count1, Rank0-Count0 | Tail], Counts),
-% true.
-rank_count([Rank0-Count0], Acc, [Rank0-Count0 | Acc]).
-rank_count([Rank1-Count0, Rank1-_ | Tail], Acc, Counts) :-
-    Count1 is Count0 + 1,
-    rank_count([Rank1-Count1 | Tail], Acc, Counts).
-rank_count([Rank0-Count0, Rank1-_ | Tail], Acc, Counts) :-
-    Rank1 \= Rank0,
-    rank_count([Rank1-1 | Tail], [Rank0-Count0 | Acc], Counts).
+%% rank_count(+Cards, ?RankCounts)
+%
+% RankCounts is a sorted (by Rank then Count) list of Rank-Count pairs
+% corresponding to Cards, which is a list of card(Rank, Suit) terms. "Count"
+% refers to the number of occurences of that rank in Cards.
+rank_count(Cards, RankCounts) :-
+        maplist(rank_suit_pair, Cards, RankSuits),
+        pairs_keys(RankSuits, Ranks),
+        msort(Ranks, SortedRanks),
+        rank_count(SortedRanks, 1, [], RankCountsDesc),
+        reverse(RankCountsDesc, RankCounts).
 
-rank_count(Cards, Counts) :-
-    maplist(pair, Cards, Pairs),
-    msort(Pairs, SortedPairs),
-    SortedPairs = [Rank-_ | Tail],
-    rank_count([Rank-1 | Tail], [], Counts0),
-    reverse(Counts0, Counts).
-
-% listof(_, []).
-% listof(X, [X | Xs]) :-
-%     listof(X, Xs).
-
-% TODO: empty hand necessary?
+% rank_count(+Ranks, +Count, +Acc, -RankCounts)
+% auxiliary predicate of rank_count/2
+rank_count([Rank0], Count0, Acc, [Rank0-Count0 | Acc]).
+rank_count([Rank1, Rank1 | Rs], Count0, Acc, RankCounts) :-
+        Count1 is Count0 + 1,
+        rank_count([Rank1 | Rs], Count1, Acc, RankCounts).
+rank_count([Rank0, Rank1 | Rs], Count0, Acc, RankCounts) :-
+        Rank1 \= Rank0,
+        rank_count([Rank1 | Rs], 1, [Rank0-Count0 | Acc], RankCounts).
 
 %% all_same_suit(+Cards)
 % 
-% Holds if Cards is a list of card(Rank, Suit) terms,
-% where all the cards are of the same suit.
-all_same_suit([]).
+% Cards is a non-empty list of card(Rank, Suit) terms, where all the
+% cards are of the same suit.
 all_same_suit([card(_, _)]).
 all_same_suit([card(_, Suit), card(Rank, Suit) | RSs]) :-
-    all_same_suit([card(Rank, Suit) | RSs]).
+        all_same_suit([card(Rank, Suit) | RSs]).
 
-
-score_flush([card(Rank, Suit) | Cards], Startcard, Score) :-
-    ( all_same_suit([card(Rank, Suit) | Cards]) ->
-        ( Startcard = card(_, Suit) ->
-            Score = 5
-        ;
-            % does not depend on size of hand???
-            Score = 4
-        )
-    ; Score = 0
-    ).
-
-%% score_flush(+Cards, +Startcard, ?Score)
+%% score_flush(+Hand, +Startcard, ?Score)
 %
-score_flush2(Cards, card(_, Suit), 5) :-
-    all_same_suit(Cards),
-    Cards = [card(_, Suit) | _].
-score_flush2(Cards, card(_, Suit2), 4) :-
-    all_same_suit(Cards),
-    Cards = [card(_, Suit1) | _],
-    Suit1 \= Suit2.
-score_flush2(Cards, card(_, _), 0) :-
-    \+ all_same_suit(Cards).
+% Score is 4 if all 4 card(Rank, Suit) terms in Hand are of the same suit.
+% Further, if Startcard is of that same suit as well, then Score is 5.
+% Otherwise Score is 0. Cards here are card(Rank, Suit) terms.
+score_flush(Cards, card(_, Suit), 5) :-
+        all_same_suit(Cards),
+        Cards = [card(_, Suit) | _].
+score_flush(Cards, card(_, Suit), 4) :-
+        all_same_suit(Cards),
+        Cards = [card(_, Suit1) | _],
+        Suit1 \= Suit.
+score_flush(Cards, card(_, _), 0) :-
+        \+ all_same_suit(Cards).
 
-score_one_for_his_nob(Hand, card(_, Suit), Score) :-
-    ( member(card(jack, Suit), Hand) ->
-        Score = 1
-    ; Score = 0
-    ).
+%% score_one_for_his_nob(+Hand, +Startcard, ?Score)
+%
+% Score is 1 if Hand contains a jack of the same suit as Startcard, and
+% 0 otherwise. Cards here are card(Rank, Suit) terms.
+score_one_for_his_nob(Hand, card(_, Suit), 1) :-
+        member(card(jack, Suit), Hand).
+score_one_for_his_nob(Hand, card(_, Suit), 0) :-
+        \+ memberchk(card(jack, Suit), Hand).
 
-score_one_for_his_nob2(Hand, card(_, Suit), 1) :-
-    member(card(jack, Suit), Hand).
-score_one_for_his_nob2(Hand, card(_, Suit), 0) :-
-    \+ memberchk(card(jack, Suit), Hand).
-
-
-
-hand_value([], _, 0).
-% hand_value(+Hand, +Startcard, ?Value)
-% FIXME: documentation is assessed...
+%% hand_value(+Hand, +Startcard, ?Value)
+%
+% Value is the total value of the 5-card cribbage hand consisting of the
+% 4-card hand Hand and Startcard. A hand is a list of valid
+% card(Rank, Suit) terms.
 hand_value(Hand, Startcard, Value) :-
-    maplist(valid_card, Hand),
-    score_one_for_his_nob2(Hand, Startcard, S0),
-    score_flush2(Hand, Startcard, S1),
-    Cards = [Startcard | Hand],
-    score_fifteens2(Cards, S2),
-    rank_count(Cards, Counts),
-    score_runs2(Counts, S3),
-    score_pairs2(Counts, S4),
-    Value is S0 + S1 + S2 + S3 + S4.
+        length(Hand, 4),
+        maplist(valid_card, Hand),
+        score_one_for_his_nob(Hand, Startcard, S0),
+        score_flush(Hand, Startcard, S1),
+        Cards = [Startcard | Hand],
+        score_fifteens(Cards, S2),
+        rank_count(Cards, Counts),
+        score_runs2(Counts, S3),
+        score_pairs(Counts, S4),
+        Value is S0 + S1 + S2 + S3 + S4.
 
 hand(Cards, Hand) :-
     length(Hand, 4),
@@ -330,17 +266,6 @@ expected_hand_score(Hand, Score) :-
     length(Scores, LenScores),
     Score is SumScores / LenScores.
 
-% max_score([], CurrBestHand-_, CurrBestHand).
-% max_score([Hand-Score | HSs], _-CurrBestScore, BestHand) :-
-%     Score > CurrBestScore,
-%     max_score(HSs, Hand-Score, BestHand).
-% max_score([_-Score | HSs], CurrBestHand-CurrBestScore, BestHand) :-
-%     Score =< CurrBestScore,
-%     max_score(HSs, CurrBestHand-CurrBestScore, BestHand).
-
-% max_score([Hand-Score | HSs], BestHand) :-
-%     max_score(HSs, Hand-Score, BestHand).
-
 % what strategy
 select_hand(Cards, Hand, Cribcards) :-
     maplist(valid_card, Cards),
@@ -352,12 +277,97 @@ select_hand(Cards, Hand, Cribcards) :-
     exclude(member_of(Hand), Cards, Cribcards).
 
 
+/*
+
+score_flush1([card(Rank, Suit) | Cards], Startcard, Score) :-
+    ( all_same_suit([card(Rank, Suit) | Cards]) ->
+        ( Startcard = card(_, Suit) ->
+            Score = 5
+        ;
+            % does not depend on size of hand???
+            Score = 4
+        )
+    ; Score = 0
+    ).
+
+pair1(card(Rank, Suit), R-Suit) :-
+    Mappings = [ace-1, jack-11, queen-12, king-13],
+    % Suits = [clubs, diamonds, hearts, spades],
+    % member(Suit, Suits),
+    ( member(Rank-Value, Mappings) ->
+        R = Value
+    ; integer(Rank), between(2, 10, Rank) ->
+        R = Rank
+    ).
+
+score_pairs1([], Acc, Acc).
+score_pairs1([_-Count | Tail], Acc, Score) :-
+    ( Count >= 2 ->
+        choose(2, Count, NPairs),
+        Acc1 is Acc + (NPairs * 2),
+        score_pairs1(Tail, Acc1, Score)
+    ;
+        score_pairs1(Tail, Acc, Score)
+    ).
+score_pairs1(Counts, Score) :-
+    score_pairs1(Counts, 0, Score).
+sum_ranks([], Acc, Acc).
+sum_ranks([R-_ | RCs], Acc, Sum) :-
+    Acc1 is Acc + min(R, 10),
+    sum_ranks(RCs, Acc1, Sum).
+
+sum_ranks(Cards, Sum) :-
+    sum_ranks(Cards, 0, Sum).
+
+product_counts([], Acc, Acc).
+product_counts([_-C | RCs], Acc, Product) :-
+    Acc1 is Acc * C,
+    product_counts(RCs, Acc1, Product).
+
+product_counts(Cards, Product) :-
+    product_counts(Cards, 1, Product).
+
+
+%% fifteen(+)
+%
+fifteen1(Cards, Combo, Ways) :-
+    combo(Cards, Combo),
+    sum_ranks(Combo, 15),
+    product_counts(Combo, Ways).
+
+score_fifteens1(Cards, Score) :-
+    ( setof(Combo-Ways, fifteen1(Cards, Combo, Ways), Pairs) ->
+        pairs_values(Pairs, Values),
+        sumlist(Values, N),
+        Score is N * 2
+    ;
+        Score is 0
+    ).
+*/
+
+% score_one_for_his_nob1(Hand, card(_, Suit), Score) :-
+%     ( member(card(jack, Suit), Hand) ->
+%         Score = 1
+%     ; Score = 0
+%     ).
+
 %zip(Scores, Hands, ScoreHands),
 % msort(ScoreHands, SortedScoreHandsAsc),
 % reverse(SortedScoreHandsAsc, [Score-Hand, Score2-_, Score3-_ | _]),
 %max_score(HandScores, Hand),
 %max_list(ScoreHands, Hand-_),
 
+
+% max_score([], CurrBestHand-_, CurrBestHand).
+% max_score([Hand-Score | HSs], _-CurrBestScore, BestHand) :-
+%     Score > CurrBestScore,
+%     max_score(HSs, Hand-Score, BestHand).
+% max_score([_-Score | HSs], CurrBestHand-CurrBestScore, BestHand) :-
+%     Score =< CurrBestScore,
+%     max_score(HSs, CurrBestHand-CurrBestScore, BestHand).
+
+% max_score([Hand-Score | HSs], BestHand) :-
+%     max_score(HSs, Hand-Score, BestHand)
 
 /*
 tests, and expected output:

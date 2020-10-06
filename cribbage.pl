@@ -90,9 +90,11 @@ rank_count([Rank0, Rank1 | Rs], Count0, Acc, RankCounts) :-
 % Combo is a combination of elements from List.
 % List's (hence Combo's) elements need not be unique.
 combo([], []).
-combo([_|Tail1], Tail2) :-
+combo([_|Tail1], Combo) :-
+        Combo = Tail2,
         combo(Tail1, Tail2).
-combo([Head|Tail1], [Head|Tail2]) :-
+combo([Head|Tail1], Combo) :-
+        Combo = [Head | Tail2],
         combo(Tail1, Tail2).
 
 %% fifteen(+Ranks, ?Combo)

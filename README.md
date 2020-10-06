@@ -19,7 +19,7 @@ The main predicates are:
 
 1. Have [SWI-Prolog](https://www.swi-prolog.org/) installed.
 2. Run `swipl` in the terminal.
-3. Load the module with `[cribbage]`, then call the functions.
+3. Load the module with `[cribbage].`, then call the functions.
 
 Tests are in [`tests.pl`](./tests.pl). Running that in the interpreter should
 return `true`, if all tests pass.

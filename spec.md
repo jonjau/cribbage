@@ -1,4 +1,4 @@
-# dp a1: cribbage
+# dp p1: cribbage
 
 The objective of this project is to practice and assess your understanding of
 logic programming and Prolog. You will write code to perform the major parts

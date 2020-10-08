@@ -271,7 +271,7 @@ expected_hand_score(Startcards, Hand, Score) :-
 % terms such that the expected value, as defined by expected_hand_scores/3 is
 % maximised. There may be multiple best hands; this predicate only returns one
 % and does not backtrack. Hand contains the 4 cards to be kept and
-% Cribcards contains the cards not to be kept, card(Rank, Suit) terms.
+% Cribcards contains the cards not to be kept, in card(Rank, Suit) terms.
 % Both Hand and Cribcards are not explicitly sorted.
 select_hand(Cards, Hand, Cribcards) :-
         length(Cards, Len),

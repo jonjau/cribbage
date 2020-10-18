@@ -13,8 +13,7 @@ The main predicates are:
    by averaging the scores across all possible card arrangements
 
 This was a submission for Project 1 of COMP30020 at the University of
-Melbourne, Semester 2 2020. The grade received was 29.0/30.0, with feedback
-about factorials and binomial coefficients being overkill for `score_pairs/2`.
+Melbourne, Semester 2 2020. The grade received was 29.0/30.0.
 
 ## Running in the interpreter
 
